@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Webtalk v2017.2 (64-bit)
+# SW Build 1909853 on Thu Jun 15 18:39:09 MDT 2017
+# 
+# Start of session at: Sun Nov  5 15:26:30 2017
+# Process ID: 37108
+# Current directory: C:/dev/workspace/zybo-lx/zybo-lx.sdk/webtalk
+# Command line: wbtcv.exe -mode batch -source sdk_webtalk.tcl
+# Log file: C:/dev/workspace/zybo-lx/zybo-lx.sdk/webtalk/webtalk.log
+# Journal file: C:/dev/workspace/zybo-lx/zybo-lx.sdk/webtalk\webtalk.jou
+#-----------------------------------------------------------
+source sdk_webtalk.tcl
