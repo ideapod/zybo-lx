@@ -1,0 +1,144 @@
+/*
+ * This test application is to read/write data directly from/to the device 
+ * from userspace. 
+ * 
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+
+#define IN 0
+#define OUT 1
+
+/* offsets for AXI_GPIO registers */
+#define GPIO_DATA	0x0000
+#define GPIO_TRI	0x0004
+#define GPIO_2_DATA	0x0008
+#define	GPIO_2_TRI	0x000C
+
+
+/* assume 4 bit width data */
+#define DATA_4_BIT_INPUT 0x0
+#define DATA_4_BIT_OUTPUT 0xF
+
+void usage(void)
+{
+	printf("%s -g <GPIO_ADDRESS> -c <CHANNEL> -i|-o <VALUE>\n",argv[0]);
+	printf("    -g <GPIO_ADDR>   AXI GPIO physical base address\n");
+	printf("    -c <CHANNEL>     AXI GPIO channel number (1 or 2)\n");
+	printf("    -i               Input from GPIO\n");
+	printf("    -o <VALUE>       Output to GPIO\n");
+	return;
+}
+
+int main(int argc, char *argv[])
+{
+	int c;
+	int fd;
+	int direction=IN;
+	unsigned gpio_addr = 0;
+	unsigned gpio_chan = 1;
+	unsigned data_offset = 0;
+	unsigned ctrl_offset = 0; 
+	int value = 0;
+	
+	
+	unsigned page_addr, page_offset;
+	void *ptr;
+	unsigned page_size=sysconf(_SC_PAGESIZE);
+
+	printf("AXI GPIO access through /dev/mem.\n", page_size);
+
+	/* Parse command line arguements */
+	while((c = getopt(argc, argv, "g:c:io:h")) != -1) {
+		switch(c) {
+		case 'g':
+			gpio_addr=strtoul(optarg,NULL, 0);
+			break;
+		case 'c':
+			gpio_chan=strtoul(optarg,NULL, 0);
+			break;
+		case 'i':
+			direction=IN;
+			break;
+		case 'o':
+			direction=OUT;
+			value=atoi(optarg);
+			break;
+		case 'h':
+			usage();
+			return 0;
+		default:
+			printf("invalid option: %c\n", (char)c);
+			usage();
+			return -1;
+		}
+		
+	}
+
+	if (gpio_addr == 0) {
+		printf("AXI GPIO physical address is required.\n");
+		usage();
+		return -1;
+	}
+	
+	if (gpio_chan == 0) {
+		printf("AXI GPIO channel address is required.\n");
+		usage();
+		return -1;
+	}
+
+	/* Open /dev/mem file */
+	fd = open ("/dev/mem", O_RDWR);
+	if (fd < 1) {
+		perror(argv[0]);
+		return -1;
+	}
+
+	printf("memory opened ok, page size=%d\n",page_size);
+	printf("gpio address=%l\n",gpio_addr);
+
+  cfg = mmap(NULL, sysconf(_SC_PAGESIZE), /* map the memory */
+             PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x42000000);
+
+
+	/* mmap the device into memory */
+	page_addr = (gpio_addr & (~(page_size-1)));
+	page_offset = gpio_addr - page_addr;
+	ptr = mmap(NULL, page_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, page_addr);
+
+
+
+	if (gpio_chan == 1) {
+		data_offset = GPIO_DATA;
+		ctrl_offset = GPIO_TRI; 
+	} else {
+		data_offset = GPIO_2_DATA;
+		ctrl_offset = GPIO_2_TRI; 
+	}
+
+
+	if (direction == IN) {
+		/* set the direction for the channel to in */
+		*((unsigned *)(ptr + ctrl_offset)) = DATA_4_BIT_INPUT;
+
+		/* Read value from the device register */
+		value = *((unsigned *)(ptr + data_offset));
+		printf("axi gpio dev-mem test: input: %08x\n",value);
+	} else {
+	/* Write value to the device register */
+		/* set the direction for the channel to output */
+		
+		*((unsigned *)(ptr + ctrl_offset)) = DATA_4_BIT_OUTPUT; 
+		/* Read value from the device register */
+		*((unsigned *)(ptr + data_offset)) = value;
+	}
+
+	munmap(ptr, page_size);
+
+	return 0;
+}
+
+
