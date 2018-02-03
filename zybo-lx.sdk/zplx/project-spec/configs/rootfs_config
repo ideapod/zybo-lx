@@ -4212,6 +4212,7 @@ CONFIG_tcpdump=y
 # apps 
 #
 CONFIG_axi-gpio-test=y
+CONFIG_cpuminer-multi=y
 CONFIG_gpio-demo=y
 CONFIG_gpio-dev-mem-test=y
 CONFIG_gpio-uio-test=y
