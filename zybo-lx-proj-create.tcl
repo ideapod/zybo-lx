@@ -33,7 +33,7 @@
 #*****************************************************************************************
 
 # Set the reference directory for source file relative paths (by default the value is script directory path)
-set origin_dir "."
+set origin_dir [file dirname [info script]]
 
 # Use origin directory path location variable, if specified in the tcl shell
 if { [info exists ::origin_dir_loc] } {
@@ -84,10 +84,11 @@ if { $::argc > 0 } {
 }
 
 # Set the directory path for the original project from where this script was exported
-set orig_proj_dir "[file normalize "$origin_dir/"]"
+# set orig_proj_dir "[file normalize "$origin_dir/"]"
 
 # Create project
-create_project zybo-lx ./zybo-lx -part xc7z010clg400-1
+# create_project zybo-lx ./zybo-lx -part xc7z010clg400-1
+create_project zybo-lx $origin_dir/zybo-lx
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -118,13 +119,24 @@ set_property "ip_repo_paths" "[file normalize "$origin_dir/../../vivado-library"
 # Rebuild user ip_repo's index before adding any source files
 update_ip_catalog -rebuild
 
+
+# MJDS - included block design and wrapper here. 
+
+# Create block design
+ source $origin_dir/src/bd/design_1.tcl
+
+ # Generate the wrapper
+ set design_name [get_bd_designs]
+ make_wrapper -files [get_files $design_name.bd] -top -import
+
+
 # Set 'sources_1' fileset object
-set obj [get_filesets sources_1]
-set files [list \
+# set obj [get_filesets sources_1]
+# set files [list \
  "[file normalize "$origin_dir/zybo-lx.srcs/sources_1/bd/design_1/design_1.bd"]"\
  "[file normalize "$origin_dir/zybo-lx.srcs/sources_1/bd/design_1/hdl/design_1_wrapper.vhd"]"\
 ]
-add_files -norecurse -fileset $obj $files
+# add_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset file properties for remote files
 set file "$origin_dir/zybo-lx.srcs/sources_1/bd/design_1/hdl/design_1_wrapper.vhd"
